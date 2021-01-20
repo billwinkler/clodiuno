@@ -61,16 +61,26 @@
 ;; Serial Setup
 ;;
 
+;; (defn- port-identifier
+;;   "Given a port name return its identifier."
+;;   [port-name]
+;;   (try
+;;     (let [ports (CommPortIdentifier/getPortIdentifiers)]
+;;       (loop [port (.nextElement ports)
+;; 	     name (.getName port)]
+;; 	(if (= name port-name)
+;; 	  port (recur (.nextElement ports) (.getName port)))))
+;;     (catch Exception e (throw (NoSuchPortException.)))))
+
 (defn- port-identifier
   "Given a port name return its identifier."
   [port-name]
-  (try
-    (let [ports (CommPortIdentifier/getPortIdentifiers)]
-      (loop [port (.nextElement ports)
-	     name (.getName port)]
-	(if (= name port-name)
-	  port (recur (.nextElement ports) (.getName port)))))
-    (catch Exception e (throw (NoSuchPortException.)))))
+  (or (when-let [port (->> (CommPortIdentifier/getPortIdentifiers)
+                           enumeration-seq
+                           (filter #(= port-name (.getName %)))
+                           first)]
+        port)
+      (throw (NoSuchPortException.))))
 
 (defn- open
   "Open serial interface."
